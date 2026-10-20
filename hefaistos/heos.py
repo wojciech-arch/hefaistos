@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 
 from pyheos import Heos, HeosOptions, PlayState
@@ -63,3 +64,42 @@ async def wait_ungrouped(heos: Heos, pids: frozenset[int], timeout: float = 20.0
             return
         await asyncio.sleep(0.5)
     raise TimeoutError(f"speakers {sorted(pids)} still grouped after {timeout}s")
+
+
+async def command(host: str, cmd: str, timeout: float = 10.0) -> dict:
+    """One raw HEOS CLI command, for the group preset commands pyheos does not wrap.
+
+    Undocumented in the HEOS CLI spec (seen on firmware 3.139): group/get_group_presets and
+    group/apply_group_preset?preset_id=<id>. Presets are held by one speaker, so `host` must be it.
+    """
+    reader, writer = await asyncio.wait_for(asyncio.open_connection(host, 1255), timeout)
+    try:
+        writer.write(f"heos://{cmd}\r\n".encode())
+        await writer.drain()
+        name = cmd.split("?", 1)[0]
+        while True:
+            reply = json.loads(await asyncio.wait_for(reader.readline(), timeout))
+            if reply.get("heos", {}).get("command") == name:
+                if reply["heos"].get("result") != "success":
+                    raise RuntimeError(f"HEOS {name} failed: {reply['heos'].get('message')}")
+                return reply
+    finally:
+        writer.close()
+
+
+async def apply_preset(host: str, preset_id: str) -> None:
+    log("heos.apply_preset", preset=preset_id)
+    await command(host, f"group/apply_group_preset?preset_id={preset_id}")
+
+
+async def wait_for_pids(heos: Heos, pids: frozenset[int], timeout: float) -> Group:
+    """Wait for a group with exactly these speakers; HEOS picks the preset's leader itself.
+    Removing a speaker from a preset group took ~20 s in tests, hence the long timeout."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for g in await read_groups(heos):
+            if g.pids == pids:
+                return g
+        await asyncio.sleep(0.5)
+    raise TimeoutError(f"HEOS did not report a group of {sorted(pids)} within {timeout:.0f}s after applying the preset; "
+                       "check the preset's speakers in the HEOS app match config.json, and that heos_host is the speaker holding the presets")

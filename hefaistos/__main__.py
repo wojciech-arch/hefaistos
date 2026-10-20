@@ -20,7 +20,8 @@ CONFIG = Path(os.environ.get("HEFAISTOS_CONFIG", "/config/config.json"))
 
 
 def parse_config(cfg: dict) -> tuple[str, dict[str, Target]]:
-    targets = {n: Target(n, t["leader"], tuple(t["members"]), t.get("name") or n) for n, t in cfg["targets"].items()}
+    targets = {n: Target(n, t["leader"], tuple(t["members"]), t.get("name") or n, t.get("preset", ""))
+               for n, t in cfg["targets"].items()}
     labels = [t.label for t in targets.values()]
     if len(set(labels)) != len(labels):
         raise SystemExit(f"target names must be unique, got {labels}; Spotify tells endpoints apart by name")
@@ -53,12 +54,17 @@ async def cmd_ungroup(host: str, targets: dict[str, Target]) -> None:
         await heos.disconnect()
 
 
-async def form_group(heos: h.Heos, target: Target, targets: dict[str, Target]) -> h.Group:
+PRESET_TIMEOUT_S = 45.0
+
+
+async def form_group(host: str, heos: h.Heos, target: Target, targets: dict[str, Target]) -> h.Group:
     groups = await h.read_groups(heos)
-    steps = plan_group(target, groups)
     busy = takeover_pids(target, await h.playing(heos, target.pids))
     await h.stop(heos, busy)
-    await h.apply(heos, steps)
+    if target.preset:
+        await h.apply_preset(host, target.preset)
+        return await h.wait_for_pids(heos, target.pids, PRESET_TIMEOUT_S)
+    await h.apply(heos, plan_group(target, groups))
     return await h.wait_for_group(heos, target.leader, target.pids)
 
 
@@ -77,7 +83,7 @@ async def cmd_group(host: str, name: str, targets: dict[str, Target]) -> None:
     try:
         heos = await h.connect(host)
         try:
-            g = await form_group(heos, targets[name], targets)
+            g = await form_group(host, heos, targets[name], targets)
         finally:
             await heos.disconnect()
     except Exception as e:

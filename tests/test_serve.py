@@ -61,3 +61,13 @@ def test_a_hand_made_group_with_the_same_speakers_also_hides_the_target():
 
 def test_an_unrelated_group_hides_nothing():
     assert visible_targets(TARGETS, [Group("Den + Kids", 2, (3,))]) == {"all", "no-kid"}
+
+
+def test_a_target_can_name_a_heos_preset():
+    _, targets = parse_config(cfg(**{"no-kid": {"name": "No Kid", "preset": "ec49", "leader": 1, "members": [2]}}))
+    assert targets["no-kid"].preset == "ec49"
+
+
+def test_targets_without_a_preset_are_built_by_hefaistos():
+    _, targets = parse_config(cfg(all={"leader": 1, "members": [2, 3]}))
+    assert targets["all"].preset == ""
