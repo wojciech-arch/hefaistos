@@ -1,7 +1,8 @@
 """Runs one librespot endpoint per target, but only while that target's HEOS group does not exist.
 
-Once a target's group is formed, the group itself is what Spotify should offer, so the target's
-endpoint is stopped (which also pauses Spotify's silent playback on it). It comes back when the
+When a target is picked, the hook stops its endpoint at once (Spotify pauses and the entry goes)
+and marks it as switching, which keeps it down while HEOS regroups. Once the group is formed, the
+group itself is what Spotify should offer, so the endpoint stays down until the group is gone. It comes back when the
 group is replaced by another target or dissolved, e.g. by AirPlay to one of its speakers.
 If HEOS cannot be read, every endpoint is shown: better a redundant entry than a missing one.
 
@@ -18,6 +19,7 @@ import sys
 import threading
 import time
 from collections.abc import Sequence
+from pathlib import Path
 
 from . import heos as h
 from .groups import Group, Target
@@ -31,6 +33,23 @@ PORT_BASE = int(os.environ.get("HEFAISTOS_ZEROCONF_PORT_BASE", "50100"))
 POLL_S = 2.0
 TICK_S = 0.5
 MAX_RESTARTS, RESTART_WINDOW_S = 10, 60.0
+SWITCH_HIDE_S = 60.0
+
+
+def switch_marker(name: str) -> Path:
+    """Touched by the hook when a target is picked: keep its endpoint down while HEOS regroups."""
+    return Path(f"/tmp/hefaistos-switching-{name}")
+
+
+def switching(marker_mtime: float | None, now: float) -> bool:
+    return marker_mtime is not None and now - marker_mtime < SWITCH_HIDE_S
+
+
+def _marker_mtime(name: str) -> float | None:
+    try:
+        return switch_marker(name).stat().st_mtime
+    except FileNotFoundError:
+        return None
 
 
 def zeroconf_ports(targets: dict[str, Target]) -> dict[str, int]:
@@ -149,6 +168,8 @@ def run(host: str, targets: dict[str, Target]) -> None:
             del running[name]
             if pid in released:
                 released.discard(pid)
+            elif switching(_marker_mtime(name), time.time()):
+                log("serve.endpoint_switching", target=name)
             elif not vis.stopping and too_many_restarts(restarts[name], time.monotonic()):
                 failed = True
                 log("serve.endpoint_flapping", target=name, status=status,
@@ -163,7 +184,8 @@ def run(host: str, targets: dict[str, Target]) -> None:
             if not running:
                 break
         else:
-            wanted = vis.wanted()
+            now = time.time()
+            wanted = {n for n in vis.wanted() if not switching(_marker_mtime(n), now)}
             for name in targets:
                 if name in wanted and name not in running:
                     spawn(name)

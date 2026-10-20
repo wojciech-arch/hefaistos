@@ -2,7 +2,7 @@ import pytest
 
 from hefaistos.__main__ import parse_config
 from hefaistos.groups import Group
-from hefaistos.serve import MAX_RESTARTS, librespot_cmd, too_many_restarts, visible_targets, zeroconf_ports
+from hefaistos.serve import MAX_RESTARTS, SWITCH_HIDE_S, switching, librespot_cmd, too_many_restarts, visible_targets, zeroconf_ports
 
 
 def cfg(**targets):
@@ -71,3 +71,12 @@ def test_a_target_can_name_a_heos_preset():
 def test_targets_without_a_preset_are_built_by_hefaistos():
     _, targets = parse_config(cfg(all={"leader": 1, "members": [2, 3]}))
     assert targets["all"].preset == ""
+
+
+def test_a_picked_target_stays_hidden_while_heos_regroups():
+    assert switching(100.0, 100.0 + SWITCH_HIDE_S - 1)
+
+
+def test_the_switch_window_expires():
+    assert not switching(100.0, 100.0 + SWITCH_HIDE_S + 1)
+    assert not switching(None, 100.0)

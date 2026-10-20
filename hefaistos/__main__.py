@@ -99,19 +99,22 @@ async def cmd_hook(host: str, name: str, targets: dict[str, Target]) -> None:
     """Called by librespot --onevent when the target endpoint starts loading/playing.
 
     librespot fires several events per selection, so a lock file debounces them to one grouping.
-    On success `serve` hides the endpoint once it sees the group, and the listener taps the group.
-    On failure the endpoint is released here so Spotify does not keep "playing" into the silent
-    sink; `serve` brings it back.
+    The endpoint is released straight away, so Spotify pauses and the entry disappears instead of
+    sitting next to the HEOS group while it forms; the switching marker keeps `serve` from bringing
+    it back. If grouping fails the marker is removed and the endpoint returns.
     """
     lock = Path(f"/tmp/hefaistos-hook-{name}")
     if lock.exists() and time.time() - lock.stat().st_mtime < HOOK_DEBOUNCE_S:
         return
     lock.touch()
     log("hook.selected", target=name, player_event=os.environ.get("PLAYER_EVENT"))
+    marker = serve.switch_marker(name)
+    marker.touch()
+    release_endpoint(os.environ.get("HEFAISTOS_ENDPOINT_PID"))
     try:
         await cmd_group(host, name, targets)
     except BaseException:
-        release_endpoint(os.environ.get("HEFAISTOS_ENDPOINT_PID"))
+        marker.unlink(missing_ok=True)
         raise
 
 

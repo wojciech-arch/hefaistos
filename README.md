@@ -7,7 +7,7 @@ Without hefaistos you have to build the group in the HEOS app before Spotify can
 ## Using it
 
 1. In Spotify, pick a target such as **All**.
-2. A few seconds later the target disappears and its HEOS group appears (e.g. **Living + Den + Kids**). Tap the group and press play.
+2. The target disappears straight away and playback pauses; a few seconds later its HEOS group appears (e.g. **Living + Den + Kids**). Tap the group and press play.
 3. To play on one speaker only, AirPlay to it. HEOS dissolves the group, and the targets come back.
 
 ## How it works
