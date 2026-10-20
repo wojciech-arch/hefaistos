@@ -15,8 +15,8 @@ Spotify app ──picks "All"──▶ librespot endpoint "All" (ZeroConf, never
 Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ plays natively on HEOS
 ```
 
-- Picking a target takes over its speakers: anything playing on them (e.g. AirPlay) is stopped first.
-- Only groups whose composition matches a configured target are changed. A group containing any other speaker is refused.
+- Picking a target takes over its speakers: anything playing on them (AirPlay, a group made in the HEOS app) is stopped, and any group holding them is reshaped or dissolved.
+- Groups that share no speaker with the target are never touched.
 - Any failure dissolves the half-built group.
 - Pausing keeps the group. To play on a single speaker again, AirPlay to it: HEOS dissolves the group itself.
 

@@ -1,8 +1,8 @@
 """Pure planning of HEOS set_group calls.
 
-Ownership rule: hefaistos may only reshape or dissolve a group whose leader+members equal one
-of the configured targets (so a user-made group with a target's exact composition is taken over);
-any other group touching a target speaker is a conflict and is never modified.
+Takeover rule: picking a target takes its speakers, whatever they are doing. Any group holding
+one of them, hand-made in the HEOS app or another target, is reshaped or dissolved. Groups that
+share no speaker with the target are never touched.
 """
 
 from collections.abc import Sequence
@@ -31,25 +31,17 @@ class Group:
         return frozenset((self.leader, *self.members))
 
 
-class GroupConflict(Exception):
-    pass
-
-
 def _is_known(group: Group, targets: Sequence[Target]) -> bool:
     return any(group.pids == t.pids for t in targets)
 
 
-def plan_group(target: Target, groups: Sequence[Group], targets: Sequence[Target]) -> list[list[int]]:
+def plan_group(target: Target, groups: Sequence[Group]) -> list[list[int]]:
     """Return the ordered set_group pid lists that turn `groups` into `target`."""
     touching = [g for g in groups if g.pids & target.pids]
     if any(g.leader == target.leader and g.pids == target.pids for g in touching):
         return []
-    for g in touching:
-        if not _is_known(g, targets):
-            raise GroupConflict(
-                f"group '{g.name}' (leader {g.leader}, members {list(g.members)}) is not a hefaistos "
-                f"target; ungroup it in the HEOS app or add its composition to config.json"
-            )
+    # A group led by the target leader is reshaped by the final set_group; any other group holding
+    # a target speaker is dissolved first, which also frees its speakers outside the target.
     steps = [[g.leader] for g in touching if g.leader != target.leader]
     steps.append([target.leader, *target.members])
     return steps
@@ -66,11 +58,7 @@ def plan_rollback(target: Target, groups: Sequence[Group]) -> list[list[int]]:
             if g.leader == target.leader and g.pids < target.pids]
 
 
-def takeover_pids(target: Target, groups: Sequence[Group], playing: dict[int, bool]) -> list[int]:
-    """Target speakers that are busy with something else and must be stopped before grouping
-    (picking a target takes its speakers over, e.g. stops AirPlay on them).
-
-    Speakers already in a group led by the target leader are playing our session; stopping them
-    would break a seamless All <-> No Kid reshape."""
-    ours = next((g.pids for g in groups if g.leader == target.leader), frozenset())
-    return [pid for pid in (target.leader, *target.members) if playing.get(pid) and pid not in ours]
+def takeover_pids(target: Target, playing: dict[int, bool]) -> list[int]:
+    """Target speakers that are playing and must be stopped before grouping (e.g. AirPlay, or a
+    hand-made group). The listener's own Spotify playback has already moved to the endpoint."""
+    return [pid for pid in (target.leader, *target.members) if playing.get(pid)]

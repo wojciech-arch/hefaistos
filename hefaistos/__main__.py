@@ -47,8 +47,8 @@ async def cmd_ungroup(host: str, targets: dict[str, Target]) -> None:
 
 async def form_group(heos: h.Heos, target: Target, targets: dict[str, Target]) -> h.Group:
     groups = await h.read_groups(heos)
-    steps = plan_group(target, groups, list(targets.values()))
-    busy = takeover_pids(target, groups, await h.playing(heos, target.pids))
+    steps = plan_group(target, groups)
+    busy = takeover_pids(target, await h.playing(heos, target.pids))
     await h.stop(heos, busy)
     await h.apply(heos, steps)
     return await h.wait_for_group(heos, target.leader, target.pids)
