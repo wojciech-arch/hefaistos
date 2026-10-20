@@ -1,11 +1,10 @@
-# HEFAISTOS_SECRETS: folder with .env (Spotify app credentials), config.json and, after
-# `cli login`, spotify_token.json. Mounted read-write because Spotify may rotate the token.
+# HEFAISTOS_CONFIG_DIR: folder holding config.json (HEOS host and targets).
 x-hefaistos: &hefaistos
   image: hefaistos:latest
   build: .
   network_mode: host
   volumes:
-    - ${HEFAISTOS_SECRETS:?set HEFAISTOS_SECRETS to the folder holding .env and config.json}:/secrets
+    - ${HEFAISTOS_CONFIG_DIR:?set HEFAISTOS_CONFIG_DIR to the folder holding config.json}:/config:ro
 
 services:
   all:

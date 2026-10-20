@@ -4,7 +4,7 @@
 # QNAP_TARGET  ssh target, e.g. admin@nas.local
 # LOCAL_DIR    the deploy folder as mounted on this machine, e.g. /Volumes/share/hefaistos/deploy
 # REMOTE_DIR   the same folder as seen on the QNAP, e.g. /share/share/hefaistos/deploy
-# The deploy folder must already hold a .env with HEFAISTOS_SECRETS=<QNAP path of the secrets folder>.
+# The deploy folder must already hold a .env with HEFAISTOS_CONFIG_DIR=<QNAP path of the folder with config.json>.
 set -eu
 
 : "${QNAP_TARGET:?set QNAP_TARGET, e.g. admin@nas.local}"
@@ -12,7 +12,7 @@ set -eu
 : "${REMOTE_DIR:?set REMOTE_DIR to the deploy folder path on the QNAP}"
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-[ -f "$LOCAL_DIR/.env" ] || { echo "missing $LOCAL_DIR/.env (HEFAISTOS_SECRETS=<QNAP path of secrets folder>)" >&2; exit 1; }
+grep -q '^HEFAISTOS_CONFIG_DIR=' "$LOCAL_DIR/.env" 2>/dev/null || { echo "$LOCAL_DIR/.env must set HEFAISTOS_CONFIG_DIR=<QNAP path of the folder with config.json>" >&2; exit 1; }
 
 echo "building hefaistos:latest for linux/amd64"
 docker buildx build --platform linux/amd64 --target test "$root"
