@@ -22,4 +22,4 @@ docker save hefaistos:latest | gzip -1 > "$LOCAL_DIR/hefaistos.tar.gz"
 cp "$root/compose.yaml" "$LOCAL_DIR/compose.yaml"
 
 exec "$root/scripts/qnap-remote.exp" "$QNAP_TARGET" \
-  "cd $REMOTE_DIR && docker load -i hefaistos.tar.gz && docker compose up -d all no-kid && sleep 5 && docker compose ps && docker compose logs --tail 3"
+  "cd $REMOTE_DIR && docker load -i hefaistos.tar.gz && docker compose up -d && sleep 5 && docker compose ps && docker compose logs --tail 3"
