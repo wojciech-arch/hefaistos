@@ -73,7 +73,8 @@ A target is one entry in `config.json`. One container serves all of them; after 
 
 - `name` is what Spotify shows, and must be unique. Spotify keeps a device id per name, so renaming makes a new device.
 - Player ids come from `docker compose run --rm hefaistos status`.
-- Give targets that overlap the same leader, so switching between them reshapes the existing group instead of rebuilding it.
+- The leader is the speaker Spotify streams to; it relays the audio to the members. Pick the one with the best network connection, ideally the one nearest the router or wired. In `configure.sh` it is the first speaker you type.
+- HEOS player ids identify speakers, not names: after renaming or swapping speakers in the HEOS app, pick the targets' speakers again.
 
 ### Changing targets on a NAS
 
