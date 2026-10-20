@@ -2,7 +2,13 @@
 
 Always-visible Spotify Connect targets for fixed groups of Denon HEOS speakers. Each target, for example **All** or **Downstairs**, is a set of speakers you define. Picking one in any Spotify app on your network makes hefaistos group those speakers. The group appears in Spotify a few seconds later, and you tap it to play there. Audio plays natively on HEOS; hefaistos only does the grouping.
 
-Without hefaistos you have to build the group in the HEOS app before Spotify can see it, and a speaker inside a group disappears from Spotify. hefaistos replaces the HEOS app step for everyone on the network. Nobody needs a Spotify developer app, an account login or any setup beyond joining the Wi-Fi.
+Without hefaistos you have to build the group in the HEOS app before Spotify can see it, and a speaker inside a group disappears from Spotify. The HEOS app's Group Presets make that one tap, but only inside the HEOS app. hefaistos puts the same tap in Spotify for everyone on the network. Nobody needs a Spotify developer app, an account login or any setup beyond joining the Wi-Fi.
+
+## Using it
+
+1. In Spotify, pick a target such as **All**.
+2. A few seconds later the target disappears and its HEOS group appears (e.g. **Living + Den + Kids**). Tap the group and press play.
+3. To play on one speaker only, AirPlay to it. HEOS dissolves the group, and the targets come back.
 
 ## How it works
 
@@ -11,6 +17,8 @@ Spotify app ──picks "All"──▶ librespot endpoint "All" (ZeroConf, never
                                   │ onevent: loading / playing
                                   ▼
                         hefaistos hook ──▶ HEOS CLI: stop busy speakers, set_group(leader, members)
+                                  ▼
+hefaistos serve (polls HEOS groups every 2 s) ──▶ stops the "All" endpoint while its group exists
                                   ▼
 Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ plays natively on HEOS
 ```
@@ -61,7 +69,7 @@ Other CLI commands: `ungroup`, `group <target>`.
 
 ## Targets
 
-A target is one entry in `config.json`. One container serves all of them; after editing, restart with `docker compose restart`. The example ships two: **All** (three speakers) and **No Kid** (two of them). Rename them, delete them or add more.
+A target is one entry in `config.json`. One container serves all of them; after editing by hand, restart with `docker compose restart`, or use [configure.sh](#changing-targets-on-a-nas), which edits and restarts for you. The example ships two: **All** (three speakers) and **No Kid** (two of them). Rename them, delete them or add more.
 
 ```json
 "targets": {
@@ -84,7 +92,7 @@ A target is one entry in `config.json`. One container serves all of them; after 
 ./scripts/configure.sh
 ```
 
-The editor runs in the hefaistos image on your machine and reads the speaker list from HEOS. The restart uses the same SSH login as [Deploying to a QNAP](#deploying-to-a-qnap).
+The editor runs in the hefaistos image on your machine, so it needs Docker there and network access to a HEOS speaker. It validates targets before saving: at least 2 speakers, unique names, and no two targets with the same speakers. The restart uses the same SSH login as [Deploying to a QNAP](#deploying-to-a-qnap).
 
 ## Tests
 
