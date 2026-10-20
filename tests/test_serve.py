@@ -1,7 +1,8 @@
 import pytest
 
 from hefaistos.__main__ import parse_config
-from hefaistos.serve import MAX_RESTARTS, librespot_cmd, too_many_restarts, zeroconf_ports
+from hefaistos.groups import Group
+from hefaistos.serve import MAX_RESTARTS, librespot_cmd, too_many_restarts, visible_targets, zeroconf_ports
 
 
 def cfg(**targets):
@@ -37,3 +38,26 @@ def test_released_endpoints_restart_until_they_flap():
 def test_old_restarts_fall_out_of_the_window():
     history = [0.0] * MAX_RESTARTS
     assert not too_many_restarts(history, 1000.0)
+
+
+TARGETS = parse_config(cfg(**{"all": {"leader": 1, "members": [2, 3]}, "no-kid": {"leader": 1, "members": [2]}}))[1]
+
+
+def test_every_target_is_offered_without_groups():
+    assert visible_targets(TARGETS, []) == {"all", "no-kid"}
+
+
+def test_a_formed_target_is_hidden_and_the_others_stay():
+    assert visible_targets(TARGETS, [Group("Living + Den", 1, (2,))]) == {"all"}
+
+
+def test_reshaping_to_another_target_swaps_which_one_is_hidden():
+    assert visible_targets(TARGETS, [Group("Living + Den + Kids", 1, (2, 3))]) == {"no-kid"}
+
+
+def test_a_hand_made_group_with_the_same_speakers_also_hides_the_target():
+    assert visible_targets(TARGETS, [Group("Den + Living", 2, (1,))]) == {"all"}
+
+
+def test_an_unrelated_group_hides_nothing():
+    assert visible_targets(TARGETS, [Group("Den + Kids", 2, (3,))]) == {"all", "no-kid"}

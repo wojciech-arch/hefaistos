@@ -17,13 +17,14 @@ Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ play
 
 - Picking a target takes over its speakers: anything playing on them (AirPlay, a group made in the HEOS app) is stopped, and any group holding them is reshaped or dissolved.
 - Groups that share no speaker with the target are never touched.
+- A target is listed only while its group does not exist; the group itself takes its place. Reshaping into another target, or AirPlay to one of its speakers (which dissolves the group), brings it back. If HEOS cannot be reached, every target is listed.
 - Each target listens on a fixed ZeroConf port, 50100 upwards in `config.json` order (`HEFAISTOS_ZEROCONF_PORT_BASE` changes the start). Fixed ports let Spotify apps find a restarted endpoint at its cached address.
 - Any failure dissolves the half-built group.
 - Pausing keeps the group. To play on a single speaker again, AirPlay to it: HEOS dissolves the group itself.
 
 ## Limits
 
-- Two taps: the target, then the HEOS group. Once the group is formed, the target endpoint restarts so Spotify shows paused; tap the group and press play.
+- Two taps: the target, then the HEOS group. Once the group is formed the target disappears from Spotify and playback pauses; tap the group and press play.
 - Spotify shows the group under its HEOS name (e.g. `Living + Den`), not the target name.
 - While a group exists, its speakers are hidden in Spotify. Apps without AirPlay (Android, Windows) cannot pick them individually until the group is gone.
 - Targets that share speakers cannot play at the same time; picking one takes the speakers from the other.
