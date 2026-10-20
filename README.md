@@ -86,6 +86,18 @@ docker buildx build --platform linux/amd64 -t hefaistos:latest --load . && docke
 
 On the NAS, run `docker load -i hefaistos.tar.gz`, then follow steps 3–6 above, skipping the build.
 
+### Deploying to a QNAP
+
+[scripts/deploy-qnap.sh](scripts/deploy-qnap.sh) does the whole round trip from a Mac or Linux machine that has the QNAP share mounted. It builds the amd64 image and runs the tests, copies the image and `compose.yaml` to the share, then logs in over SSH. There it answers QNAP's console menu (Q, then Y), loads the image and restarts both endpoints. It asks for the password once and never stores it.
+
+```bash
+QNAP_TARGET=admin@<nas-ip> LOCAL_DIR=/Volumes/<share>/hefaistos/deploy REMOTE_DIR=/share/<share>/hefaistos/deploy ./scripts/deploy-qnap.sh
+```
+
+- The deploy folder needs a `.env` with `HEFAISTOS_SECRETS=<QNAP path of the secrets folder>`.
+- Use the NAS's IP address, not its `.local` name. With Container Station installed, the `.local` name also resolves to internal bridge addresses, and SSH stalls on those.
+- Requires `expect`, which ships with macOS.
+
 ## License
 
 MIT. Uses [librespot](https://github.com/librespot-org/librespot) (MIT) and [pyheos](https://github.com/andrewsayre/pyheos) (Apache-2.0).

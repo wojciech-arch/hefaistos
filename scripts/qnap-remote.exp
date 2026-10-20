@@ -1,0 +1,49 @@
+#!/usr/bin/expect -f
+# Runs one shell command on a QNAP over SSH. QNAP's admin login opens the Console Management
+# menu first; this answers it (Q = quit to shell, Y = confirm) and then runs the command.
+#
+# usage: qnap-remote.exp <user@host> <command>
+# The password is read from the terminal with echo off and never written anywhere.
+
+if {[llength $argv] != 2} {
+    send_user "usage: qnap-remote.exp <user@host> <command>\n"
+    exit 2
+}
+set target [lindex $argv 0]
+set cmd [lindex $argv 1]
+# A QNAP's .local name also resolves to its Container Station bridge IPs, so ssh may spend
+# 10 s per dead address before the prompt; prefer the LAN IP as target.
+set timeout 60
+
+stty -echo
+send_user "QNAP password for $target: "
+expect_user -re "(.*)\n"
+set password $expect_out(1,string)
+stty echo
+send_user "\n"
+
+spawn ssh -t $target
+expect {
+    -re {(?i)are you sure you want to continue connecting} { send "yes\r"; exp_continue }
+    -re {(?i)password:} { send "$password\r" }
+    -re {(?i)no route to host|connection refused|timed out|could not resolve} {
+        send_user "\ncannot reach $target; check it answers `nc -z <ip> 22`, then retry\n"; exit 1 }
+    timeout { send_user "\nno password prompt from $target within 60 s; use the QNAP's LAN IP instead of its .local name, and check SSH is enabled\n"; exit 1 }
+}
+expect {
+    -re {(?i)permission denied} { send_user "\nwrong password\n"; exit 1 }
+    -re {(?i)\(y/n\)|\[y/n\]} { send "Y\r"; exp_continue }
+    -re {(?i)console management|select|choose|enter your choice} { send "Q\r"; exp_continue }
+    -re {[#$] $} {}
+    timeout { send_user "\ndid not reach a shell prompt; answer the menu by hand once and update the patterns\n"; exit 1 }
+}
+
+set timeout 600
+send "$cmd; echo HEFAISTOS_RC=\$?\r"
+expect {
+    -re {HEFAISTOS_RC=([0-9]+)} { set rc $expect_out(1,string) }
+    timeout { send_user "\ncommand did not finish within 10 min\n"; exit 1 }
+}
+send "exit\r"
+expect eof
+exit $rc
