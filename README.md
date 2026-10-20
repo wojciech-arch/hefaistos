@@ -75,6 +75,16 @@ A target is one entry in `config.json`. One container serves all of them; after 
 - Player ids come from `docker compose run --rm hefaistos status`.
 - Give targets that overlap the same leader, so switching between them reshapes the existing group instead of rebuilding it.
 
+### Changing targets on a NAS
+
+[scripts/configure.sh](scripts/configure.sh) edits the targets in a terminal menu, shows the `config.json` diff, and after you confirm, installs it on the NAS and restarts hefaistos there. It reads `HEFAISTOS_CONFIG_DIR` (the config folder as mounted on your machine), `QNAP_TARGET` and `REMOTE_DIR` from `.env` next to `compose.yaml`:
+
+```bash
+./scripts/configure.sh
+```
+
+The editor runs in the hefaistos image on your machine and reads the speaker list from HEOS. The restart uses the same SSH login as [Deploying to a QNAP](#deploying-to-a-qnap).
+
 ## Tests
 
 ```bash
@@ -98,6 +108,8 @@ On the NAS, run `docker load -i hefaistos.tar.gz`, then follow steps 1–4 above
 ```bash
 QNAP_TARGET=admin@<nas-ip> LOCAL_DIR=/Volumes/<share>/hefaistos/deploy REMOTE_DIR=/share/<share>/hefaistos/deploy ./scripts/deploy-qnap.sh
 ```
+
+The three variables can also live in `.env` next to `compose.yaml`; then `./scripts/deploy-qnap.sh` alone is enough.
 
 - The deploy folder needs a `.env` with `HEFAISTOS_CONFIG_DIR=<QNAP path of the folder with config.json>`.
 - Use the NAS's IP address, not its `.local` name. With Container Station installed, the `.local` name also resolves to internal bridge addresses, and SSH stalls on those.

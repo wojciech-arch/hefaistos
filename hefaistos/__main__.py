@@ -1,6 +1,6 @@
 """hefaistos CLI: HEOS grouping for the Spotify Connect target endpoints.
 
-  serve | status | ungroup | group <target> | hook <target>
+  serve | status | ungroup | group <target> | hook <target> | configure
 """
 
 import argparse
@@ -123,11 +123,15 @@ def release_endpoint(pid: str | None) -> None:
 def main() -> None:
     p = argparse.ArgumentParser(prog="hefaistos")
     sub = p.add_subparsers(dest="cmd", required=True)
-    for c in ("serve", "status", "ungroup"):
+    for c in ("serve", "status", "ungroup", "configure"):
         sub.add_parser(c)
     for c in ("group", "hook"):
         sub.add_parser(c).add_argument("target")
     a = p.parse_args()
+    if a.cmd == "configure":
+        from . import configure
+        configure.run(CONFIG, Path(os.environ.get("HEFAISTOS_CONFIG_OUT", "/out/config.json")))
+        return
     host, targets = load_targets()
     if a.cmd in ("group", "hook") and a.target not in targets:
         raise SystemExit(f"unknown target '{a.target}'; known: {sorted(targets)}")
