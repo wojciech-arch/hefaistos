@@ -14,6 +14,7 @@ class Target:
     name: str
     leader: int
     members: tuple[int, ...]
+    label: str = ""  # what Spotify shows; defaults to the target id
 
     @property
     def pids(self) -> frozenset[int]:

@@ -44,7 +44,7 @@ Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ play
    ```
 
    ```bash
-   docker compose run --rm cli status
+   docker compose run --rm hefaistos status
    ```
 
 4. Start the endpoints:
@@ -53,32 +53,25 @@ Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ play
    docker compose up -d
    ```
 
-Switch log: `docker compose exec all cat /tmp/hook.log`.
+Switch log: `docker compose exec hefaistos cat /tmp/hook.log`.
 
 Other CLI commands: `ungroup`, `group <target>`.
 
 ## Targets
 
-A target is an entry in `config.json` plus one service in `compose.yaml`. The repo ships two as an example: `all` (three speakers) and `no-kid` (two of them). Rename them, delete them or add more.
-
-`config.json`: the key is the target id. Get player ids from `docker compose run --rm cli status`:
+A target is one entry in `config.json`. One container serves all of them; after editing, restart with `docker compose restart`. The example ships two: **All** (three speakers) and **No Kid** (two of them). Rename them, delete them or add more.
 
 ```json
-"downstairs": { "leader": 1001, "members": [1002] }
+"targets": {
+  "all":        { "name": "All",        "leader": 1001, "members": [1002, 1003] },
+  "no-kid":     { "name": "No Kid",     "leader": 1001, "members": [1002] },
+  "quiet-room": { "name": "Quiet Room", "leader": 1002, "members": [1003] }
+}
 ```
 
-`compose.yaml`: `--name` is what Spotify shows.
-
-```yaml
-  downstairs:
-    <<: *hefaistos
-    restart: unless-stopped
-    environment:
-      HEFAISTOS_TARGET: downstairs
-    command: ["--name", "Downstairs"]
-```
-
-Choosing the leader: give targets that overlap the same leader, so switching between them reshapes the existing group instead of rebuilding it.
+- `name` is what Spotify shows, and must be unique. Spotify keeps a device id per name, so renaming makes a new device.
+- Player ids come from `docker compose run --rm hefaistos status`.
+- Give targets that overlap the same leader, so switching between them reshapes the existing group instead of rebuilding it.
 
 ## Tests
 

@@ -1,6 +1,6 @@
 """hefaistos CLI: HEOS grouping for the Spotify Connect target endpoints.
 
-  status | ungroup | group <target> | hook <target>
+  serve | status | ungroup | group <target> | hook <target>
 """
 
 import argparse
@@ -11,18 +11,25 @@ import time
 from pathlib import Path
 
 from . import heos as h
+from . import serve
 from .groups import Target, plan_group, plan_rollback, plan_ungroup, takeover_pids
 from .log import log
 
 CONFIG = Path(os.environ.get("HEFAISTOS_CONFIG", "/config/config.json"))
 
 
+def parse_config(cfg: dict) -> tuple[str, dict[str, Target]]:
+    targets = {n: Target(n, t["leader"], tuple(t["members"]), t.get("name") or n) for n, t in cfg["targets"].items()}
+    labels = [t.label for t in targets.values()]
+    if len(set(labels)) != len(labels):
+        raise SystemExit(f"target names must be unique, got {labels}; Spotify tells endpoints apart by name")
+    return cfg["heos_host"], targets
+
+
 def load_targets() -> tuple[str, dict[str, Target]]:
     if not CONFIG.exists():
-        raise SystemExit(f"{CONFIG} not found; copy config.example.json there and fill in your HEOS host and player ids (`docker compose run --rm cli status` lists them)")
-    cfg = json.loads(CONFIG.read_text())
-    targets = {n: Target(n, t["leader"], tuple(t["members"])) for n, t in cfg["targets"].items()}
-    return cfg["heos_host"], targets
+        raise SystemExit(f"{CONFIG} not found; copy config.example.json there and fill in your HEOS host and player ids (`docker compose run --rm hefaistos status` lists them)")
+    return parse_config(json.loads(CONFIG.read_text()))
 
 
 async def cmd_status(host: str) -> None:
@@ -98,7 +105,7 @@ async def cmd_hook(host: str, name: str, targets: dict[str, Target]) -> None:
 def main() -> None:
     p = argparse.ArgumentParser(prog="hefaistos")
     sub = p.add_subparsers(dest="cmd", required=True)
-    for c in ("status", "ungroup"):
+    for c in ("serve", "status", "ungroup"):
         sub.add_parser(c)
     for c in ("group", "hook"):
         sub.add_parser(c).add_argument("target")
@@ -106,7 +113,9 @@ def main() -> None:
     host, targets = load_targets()
     if a.cmd in ("group", "hook") and a.target not in targets:
         raise SystemExit(f"unknown target '{a.target}'; known: {sorted(targets)}")
-    if a.cmd == "status":
+    if a.cmd == "serve":
+        serve.run(targets)
+    elif a.cmd == "status":
         asyncio.run(cmd_status(host))
     elif a.cmd == "ungroup":
         asyncio.run(cmd_ungroup(host, targets))

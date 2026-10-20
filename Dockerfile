@@ -10,9 +10,10 @@ COPY --from=librespot /out/bin/librespot /usr/local/bin/librespot
 COPY hefaistos ./hefaistos
 RUN useradd --uid 1000 --create-home hefaistos
 USER hefaistos
-# The endpoint never plays audio: sink.sh drains PCM at real-time speed so tracks don't skip.
-ENTRYPOINT ["librespot", "--backend", "subprocess", "--device", "/app/hefaistos/sink.sh", \
-            "--disable-audio-cache", "--device-type", "speaker", "--onevent", "/app/hefaistos/hook.sh"]
+# `serve` starts one librespot endpoint per target in config.json. The endpoints never play
+# audio: sink.sh drains PCM at real-time speed so tracks don't skip.
+ENTRYPOINT ["python", "-m", "hefaistos"]
+CMD ["serve"]
 
 FROM runtime AS test
 USER root

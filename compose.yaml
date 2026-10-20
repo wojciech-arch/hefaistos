@@ -1,25 +1,10 @@
 # HEFAISTOS_CONFIG_DIR: folder holding config.json (HEOS host and targets).
-x-hefaistos: &hefaistos
-  image: hefaistos:latest
-  build: .
-  network_mode: host
-  volumes:
-    - ${HEFAISTOS_CONFIG_DIR:?set HEFAISTOS_CONFIG_DIR to the folder holding config.json}:/config:ro
-
+# One container serves every target; edit config.json and restart to add or rename one.
 services:
-  all:
-    <<: *hefaistos
+  hefaistos:
+    image: hefaistos:latest
+    build: .
+    network_mode: host
     restart: unless-stopped
-    environment:
-      HEFAISTOS_TARGET: all
-    command: ["--name", "All"]
-  no-kid:
-    <<: *hefaistos
-    restart: unless-stopped
-    environment:
-      HEFAISTOS_TARGET: no-kid
-    command: ["--name", "No Kid"]
-  cli:
-    <<: *hefaistos
-    profiles: [cli]
-    entrypoint: ["python", "-m", "hefaistos"]
+    volumes:
+      - ${HEFAISTOS_CONFIG_DIR:?set HEFAISTOS_CONFIG_DIR to the folder holding config.json}:/config:ro
