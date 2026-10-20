@@ -1,0 +1,26 @@
+# HEFAISTOS_SECRETS: folder with .env (Spotify app credentials), config.json and, after
+# `cli login`, spotify_token.json. Mounted read-write because Spotify may rotate the token.
+x-hefaistos: &hefaistos
+  image: hefaistos:latest
+  build: .
+  network_mode: host
+  volumes:
+    - ${HEFAISTOS_SECRETS:?set HEFAISTOS_SECRETS to the folder holding .env and config.json}:/secrets
+
+services:
+  all:
+    <<: *hefaistos
+    restart: unless-stopped
+    environment:
+      HEFAISTOS_TARGET: all
+    command: ["--name", "All"]
+  no-kid:
+    <<: *hefaistos
+    restart: unless-stopped
+    environment:
+      HEFAISTOS_TARGET: no-kid
+    command: ["--name", "No Kid"]
+  cli:
+    <<: *hefaistos
+    profiles: [cli]
+    entrypoint: ["python", "-m", "hefaistos"]

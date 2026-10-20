@@ -1,0 +1,7 @@
+{
+  "heos_host": "192.0.2.10",
+  "targets": {
+    "all": { "leader": 1001, "members": [1002, 1003] },
+    "no-kid": { "leader": 1001, "members": [1002] }
+  }
+}

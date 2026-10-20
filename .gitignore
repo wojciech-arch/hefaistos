@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# hefaistos: household secrets, config and private development notes
+spotify_token.json
+config.json
+*.tar.gz
+docs/
