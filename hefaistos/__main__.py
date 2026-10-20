@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import json
 import os
+import signal
 import time
 from pathlib import Path
 
@@ -92,14 +93,29 @@ async def cmd_hook(host: str, name: str, targets: dict[str, Target]) -> None:
     """Called by librespot --onevent when the target endpoint starts loading/playing.
 
     librespot fires several events per selection, so a lock file debounces them to one grouping.
-    The listener then taps the HEOS group in Spotify to move playback there.
+    Afterwards the endpoint is released, success or not, so Spotify shows paused instead of
+    playing into the silent sink; `serve` restarts it. The listener then taps the HEOS group.
     """
     lock = Path(f"/tmp/hefaistos-hook-{name}")
     if lock.exists() and time.time() - lock.stat().st_mtime < HOOK_DEBOUNCE_S:
         return
     lock.touch()
     log("hook.selected", target=name, player_event=os.environ.get("PLAYER_EVENT"))
-    await cmd_group(host, name, targets)
+    try:
+        await cmd_group(host, name, targets)
+    finally:
+        release_endpoint(os.environ.get("HEFAISTOS_ENDPOINT_PID"))
+
+
+def release_endpoint(pid: str | None) -> None:
+    if not pid or not pid.isdigit():
+        log("hook.release_skipped", reason="no endpoint pid from hook.sh")
+        return
+    try:
+        os.kill(int(pid), signal.SIGTERM)
+        log("hook.endpoint_released", pid=int(pid))
+    except ProcessLookupError:
+        log("hook.release_skipped", reason=f"endpoint {pid} already gone")
 
 
 def main() -> None:
