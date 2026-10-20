@@ -23,9 +23,9 @@ hefaistos serve (polls HEOS groups every 2 s) ──▶ stops the "All" endpoint
 Spotify app ──taps the HEOS group (e.g. "Living + Den + Kids")──▶ plays natively on HEOS
 ```
 
-- Picking a target takes over its speakers: anything playing on them (AirPlay, a group made in the HEOS app) is stopped, and any group holding them is reshaped or dissolved.
+- Picking a target takes over its speakers: anything playing on them (AirPlay, a group made in the HEOS app) is stopped, and any group holding them is dissolved. The target's group is then built fresh, so HEOS names it after its speakers.
 - Groups that share no speaker with the target are never touched.
-- A target is listed only while its group does not exist; the group itself takes its place. Reshaping into another target, or AirPlay to one of its speakers (which dissolves the group), brings it back. If HEOS cannot be reached, every target is listed.
+- A target is listed only while its group does not exist; the group itself takes its place. Switching to another target, or AirPlay to one of its speakers (which dissolves the group), brings it back. If HEOS cannot be reached, every target is listed.
 - Each target listens on a fixed ZeroConf port, 50100 upwards in `config.json` order (`HEFAISTOS_ZEROCONF_PORT_BASE` changes the start). Fixed ports let Spotify apps find a restarted endpoint at its cached address.
 - Any failure dissolves the half-built group.
 - Pausing keeps the group. To play on a single speaker again, AirPlay to it: HEOS dissolves the group itself.

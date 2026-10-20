@@ -22,21 +22,20 @@ def test_member_order_does_not_matter():
     assert plan_group(ALL, [group(LIVING, KIDS, DEN)]) == []
 
 
-def test_takeover_of_other_known_composition_reshapes_with_same_leader():
-    assert plan_group(NO_KID, [group(LIVING, DEN, KIDS, name="user group")]) == [[LIVING, DEN]]
+def test_switching_targets_rebuilds_so_heos_renames_the_group():
+    assert plan_group(NO_KID, [group(LIVING, DEN, KIDS, name="All Rooms")]) == [[LIVING], [LIVING, DEN]]
 
 
 def test_known_composition_with_other_leader_is_ungrouped_first():
-    plan = plan_group(NO_KID, [group(DEN, LIVING)])
-    assert plan == [[LIVING, DEN]] or plan == [[DEN], [LIVING, DEN]]
+    assert plan_group(NO_KID, [group(DEN, LIVING)]) == [[DEN], [LIVING, DEN]]
 
 
 def test_hand_made_group_holding_a_target_speaker_is_dissolved():
     assert plan_group(NO_KID, [group(DEN, OTHER, name="hand made")]) == [[DEN], [LIVING, DEN]]
 
 
-def test_hand_made_group_led_by_target_leader_is_reshaped():
-    assert plan_group(ALL, [group(LIVING, KIDS, name="hand made")]) == [[LIVING, DEN, KIDS]]
+def test_hand_made_group_led_by_target_leader_is_rebuilt():
+    assert plan_group(ALL, [group(LIVING, KIDS, name="hand made")]) == [[LIVING], [LIVING, DEN, KIDS]]
 
 
 def test_foreign_group_not_touching_target_is_ignored():

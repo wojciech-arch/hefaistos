@@ -2,7 +2,7 @@
 
 Once a target's group is formed, the group itself is what Spotify should offer, so the target's
 endpoint is stopped (which also pauses Spotify's silent playback on it). It comes back when the
-group is reshaped into another target or dissolved, e.g. by AirPlay to one of its speakers.
+group is replaced by another target or dissolved, e.g. by AirPlay to one of its speakers.
 If HEOS cannot be read, every endpoint is shown: better a redundant entry than a missing one.
 
 Each endpoint keeps a fixed ZeroConf port, so Spotify apps that cached its address still reach it

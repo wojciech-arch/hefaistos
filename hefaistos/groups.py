@@ -1,8 +1,8 @@
 """Pure planning of HEOS set_group calls.
 
 Takeover rule: picking a target takes its speakers, whatever they are doing. Any group holding
-one of them, hand-made in the HEOS app or another target, is reshaped or dissolved. Groups that
-share no speaker with the target are never touched.
+one of them, hand-made in the HEOS app or another target, is dissolved and the target is built
+fresh. Groups that share no speaker with the target are never touched.
 """
 
 from collections.abc import Sequence
@@ -41,9 +41,10 @@ def plan_group(target: Target, groups: Sequence[Group]) -> list[list[int]]:
     touching = [g for g in groups if g.pids & target.pids]
     if any(g.leader == target.leader and g.pids == target.pids for g in touching):
         return []
-    # A group led by the target leader is reshaped by the final set_group; any other group holding
-    # a target speaker is dissolved first, which also frees its speakers outside the target.
-    steps = [[g.leader] for g in touching if g.leader != target.leader]
+    # Every group holding a target speaker is dissolved first, even one led by the target leader:
+    # HEOS keeps a reshaped group's old name (e.g. a preset's "All Rooms"), while a fresh group is
+    # named after its speakers. Dissolving also frees speakers outside the target.
+    steps = [[g.leader] for g in touching]
     steps.append([target.leader, *target.members])
     return steps
 
