@@ -84,6 +84,24 @@ A target is one entry in `config.json`. One container serves all of them; after 
 - The leader is the speaker Spotify streams to; it relays the audio to the members. Pick the one with the best network connection, ideally the one nearest the router or wired. In `configure.sh` it is the first speaker you type.
 - HEOS player ids identify speakers, not names: after renaming or swapping speakers in the HEOS app, pick the targets' speakers again.
 
+### Strategy: rebuild or switch
+
+Each target has a `strategy`:
+
+- `rebuild` (default): hefaistos dissolves any group holding the target's speakers and builds the target with HEOS's documented `set_group`. Takes 3–4 s, and HEOS names the group after its speakers.
+- `switch`: HEOS applies one of its own Group Presets, given by `preset` (ids from `docker compose run --rm hefaistos presets`). The group keeps the preset's name.
+
+```json
+"no-kid": { "name": "No Kid", "leader": 1001, "members": [1002], "strategy": "switch", "preset": "ec496221-..." }
+```
+
+Caveats for `switch`, seen on HEOS firmware 3.139:
+
+- It uses undocumented HEOS commands (`get_group_presets`, `apply_group_preset`), which an update may change.
+- Adding speakers takes about 1 s, removing one about 20 s.
+- Presets live on one speaker; set `heos_host` to it. That speaker only picks up presets created or deleted in the HEOS app after it restarts.
+- `leader` and `members` must match the preset's speakers; hefaistos uses them to tell when the group is ready and when to hide the target.
+
 ### Changing targets on a NAS
 
 [scripts/configure.sh](scripts/configure.sh) edits the targets in a terminal menu, shows the `config.json` diff, and after you confirm, installs it on the NAS and restarts hefaistos there. It reads `HEFAISTOS_CONFIG_DIR` (the config folder as mounted on your machine), `QNAP_TARGET` and `REMOTE_DIR` from `.env` next to `compose.yaml`:

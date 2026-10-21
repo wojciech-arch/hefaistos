@@ -15,7 +15,8 @@ class Target:
     leader: int
     members: tuple[int, ...]
     label: str = ""  # what Spotify shows; defaults to the target id
-    preset: str = ""  # HEOS group preset id; when set, HEOS applies the preset instead of set_group
+    preset: str = ""  # HEOS group preset id, used by the "switch" strategy
+    strategy: str = "rebuild"  # "rebuild": dissolve and set_group; "switch": HEOS applies `preset`
 
     @property
     def pids(self) -> frozenset[int]:

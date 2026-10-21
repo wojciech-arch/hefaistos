@@ -1,6 +1,6 @@
 """hefaistos CLI: HEOS grouping for the Spotify Connect target endpoints.
 
-  serve | status | ungroup | group <target> | hook <target> | configure
+  serve | status | ungroup | presets | group <target> | hook <target> | configure
 """
 
 import argparse
@@ -19,9 +19,19 @@ from .log import log
 CONFIG = Path(os.environ.get("HEFAISTOS_CONFIG", "/config/config.json"))
 
 
+STRATEGIES = ("rebuild", "switch")
+
+
 def parse_config(cfg: dict) -> tuple[str, dict[str, Target]]:
-    targets = {n: Target(n, t["leader"], tuple(t["members"]), t.get("name") or n, t.get("preset", ""))
+    targets = {n: Target(n, t["leader"], tuple(t["members"]), t.get("name") or n, t.get("preset", ""),
+                         t.get("strategy", "rebuild"))
                for n, t in cfg["targets"].items()}
+    for t in targets.values():
+        if t.strategy not in STRATEGIES:
+            raise SystemExit(f"target '{t.name}': strategy must be one of {list(STRATEGIES)}, got '{t.strategy}'")
+        if t.strategy == "switch" and not t.preset:
+            raise SystemExit(f"target '{t.name}': strategy 'switch' needs a HEOS preset id in \"preset\"; "
+                             "`python -m hefaistos presets` lists them, or use strategy 'rebuild'")
     labels = [t.label for t in targets.values()]
     if len(set(labels)) != len(labels):
         raise SystemExit(f"target names must be unique, got {labels}; Spotify tells endpoints apart by name")
@@ -61,7 +71,7 @@ async def form_group(host: str, heos: h.Heos, target: Target, targets: dict[str,
     groups = await h.read_groups(heos)
     busy = takeover_pids(target, await h.playing(heos, target.pids))
     await h.stop(heos, busy)
-    if target.preset:
+    if target.strategy == "switch":
         await h.apply_preset(host, target.preset)
         return await h.wait_for_pids(heos, target.pids, PRESET_TIMEOUT_S)
     await h.apply(heos, plan_group(target, groups))
@@ -132,7 +142,7 @@ def release_endpoint(pid: str | None) -> None:
 def main() -> None:
     p = argparse.ArgumentParser(prog="hefaistos")
     sub = p.add_subparsers(dest="cmd", required=True)
-    for c in ("serve", "status", "ungroup", "configure"):
+    for c in ("serve", "status", "ungroup", "configure", "presets"):
         sub.add_parser(c)
     for c in ("group", "hook"):
         sub.add_parser(c).add_argument("target")
@@ -148,6 +158,10 @@ def main() -> None:
         serve.run(host, targets)
     elif a.cmd == "status":
         asyncio.run(cmd_status(host))
+    elif a.cmd == "presets":
+        reply = asyncio.run(h.command(host, "group/get_group_presets"))
+        log("heos.presets", presets=[{"name": p["name"], "preset": p["preset_id"], "pids": [d["pid"] for d in p["devices"]]}
+                                     for p in reply.get("payload", [])])
     elif a.cmd == "ungroup":
         asyncio.run(cmd_ungroup(host, targets))
     elif a.cmd == "group":

@@ -63,14 +63,24 @@ def test_an_unrelated_group_hides_nothing():
     assert visible_targets(TARGETS, [Group("Den + Kids", 2, (3,))]) == {"all", "no-kid"}
 
 
-def test_a_target_can_name_a_heos_preset():
+def test_rebuild_is_the_default_even_with_a_preset_on_file():
     _, targets = parse_config(cfg(**{"no-kid": {"name": "No Kid", "preset": "ec49", "leader": 1, "members": [2]}}))
-    assert targets["no-kid"].preset == "ec49"
+    assert (targets["no-kid"].strategy, targets["no-kid"].preset) == ("rebuild", "ec49")
 
 
-def test_targets_without_a_preset_are_built_by_hefaistos():
-    _, targets = parse_config(cfg(all={"leader": 1, "members": [2, 3]}))
-    assert targets["all"].preset == ""
+def test_switch_uses_the_heos_preset():
+    _, targets = parse_config(cfg(a={"strategy": "switch", "preset": "ec49", "leader": 1, "members": [2]}))
+    assert targets["a"].strategy == "switch"
+
+
+def test_switch_without_a_preset_is_rejected():
+    with pytest.raises(SystemExit, match="needs a HEOS preset id"):
+        parse_config(cfg(a={"strategy": "switch", "leader": 1, "members": [2]}))
+
+
+def test_unknown_strategy_is_rejected():
+    with pytest.raises(SystemExit, match="strategy must be one of"):
+        parse_config(cfg(a={"strategy": "teleport", "leader": 1, "members": [2]}))
 
 
 def test_a_picked_target_stays_hidden_while_heos_regroups():

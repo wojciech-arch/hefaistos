@@ -1,6 +1,6 @@
 import pytest
 
-from hefaistos.configure import parse_speakers, problems, slug
+from hefaistos.configure import edit_target, parse_speakers, problems, slug
 
 PLAYERS = {11: "Den", 22: "Living", 33: "Kids"}
 
@@ -38,3 +38,11 @@ def test_problems_are_reported_with_the_fix():
     assert "same speakers as 'All'" in found
     assert "at least 2 speakers" in found
     assert "unknown player ids [99]" in found
+
+
+def test_editing_keeps_strategy_and_preset(monkeypatch):
+    answers = iter(["No Kid", "2 1"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    old = {"name": "No Kid", "leader": 22, "members": [11], "strategy": "switch", "preset": "ec49"}
+    new = edit_target(old, PLAYERS, [11, 22, 33])
+    assert new == {"name": "No Kid", "leader": 22, "members": [11], "strategy": "switch", "preset": "ec49"}

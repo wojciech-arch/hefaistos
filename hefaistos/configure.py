@@ -86,7 +86,7 @@ def edit_target(t: dict | None, players: dict[int, str], order: list[int]) -> di
         if len(pids) < 2:
             print("  pick at least 2 speakers")
             continue
-        return {"name": name, "leader": pids[0], "members": pids[1:]}
+        return {**(t or {}), "name": name, "leader": pids[0], "members": pids[1:]}
 
 
 def show(targets: dict[str, dict], players: dict[int, str], order: list[int]) -> None:
@@ -97,7 +97,8 @@ def show(targets: dict[str, dict], players: dict[int, str], order: list[int]) ->
     if not targets:
         print("  (none)")
     for letter, (tid, t) in zip(LETTERS, targets.items()):
-        print(f"  {letter}) {t.get('name') or tid:<14} {describe(t, players)}")
+        mode = "" if t.get("strategy", "rebuild") == "rebuild" else "  [switch: HEOS preset]"
+        print(f"  {letter}) {t.get('name') or tid:<14} {describe(t, players)}{mode}")
     print("\n[n] new  [e <letter>] edit  [d <letter>] delete  [s] save  [q] quit without saving")
 
 
